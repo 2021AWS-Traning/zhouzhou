@@ -1,0 +1,54 @@
+version: '3.9'
+
+services:
+  docker-test-server:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    hostname: docker-test-server
+    networks:
+      - backend_network
+
+  mysql:
+    build:
+      context: ./
+      dockerfile: sql/master/Dockerfile
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: test
+    volumes:
+      - ./sql/sqldata:/docker-entrypoint-initdb.d/
+    ports:
+      - "3306:3306"
+    hostname: mysql-db2-master
+    networks:
+      - mysql_network
+      - backend_network
+  mysql-slave-01:
+    build:
+      context: ./
+      dockerfile: sql/slave/Dockerfile
+    environment:
+      MYSQL_ROOT_PASSWORD: testslave
+    ports:
+      - "3307:3306"
+    restart: always
+    hostname: mysql-slave-01
+    volumes:
+      - ./sql/mysql:/var/lib/mysql
+    depends_on:
+      - mysql
+    networks:
+      - mysql_network
+
+
+
+networks:
+  mysql_network:
+    driver: bridge
+  backend_network:
+    driver: bridge
+
